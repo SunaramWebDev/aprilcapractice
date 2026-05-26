@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA Practice Mode – April 2026</title>
+<style>
+/* ─── RESET & BASE ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #0f1623;
+  --panel:    #161f30;
+  --card:     #1c2840;
+  --border:   #263350;
+  --blue:     #2563eb;
+  --blue-h:   #3b74f5;
+  --green:    #16a34a;
+  --green-bg: #052e16;
+  --green-bd: #166534;
+  --red:      #dc2626;
+  --red-bg:   #2d0a0a;
+  --red-bd:   #991b1b;
+  --amber:    #f59e0b;
+  --text:     #e2e8f0;
+  --text2:    #8899bb;
+  --text3:    #4a5f80;
+  --white:    #ffffff;
+  --radius:   12px;
+  --font:     -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono:     'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* ─── HEADER ───────────────────────────────────────────────── */
+#header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.app-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--blue), #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.app-title { font-size: 15px; font-weight: 700; color: var(--white); }
+.app-sub   { font-size: 11px; color: var(--text2); margin-top: 1px; }
+
+/* ─── LIVE SCOREBOARD (header bar) ─────────────────────────── */
+#scoreboard {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.sb-cell {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 5px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  min-width: 64px;
+}
+.sb-val {
+  font-size: 18px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.sb-lbl { font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; margin-top: 3px; }
+.sb-cell.total   .sb-val { color: var(--white); }
+.sb-cell.attempted .sb-val { color: #60a5fa; }
+.sb-cell.correct .sb-val { color: #4ade80; }
+.sb-cell.wrong   .sb-val { color: #f87171; }
+.sb-cell.remain  .sb-val { color: var(--amber); }
+
+/* ─── LAYOUT ────────────────────────────────────────────────── */
+#layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── SIDEBAR ───────────────────────────────────────────────── */
+#sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  padding: 16px 12px;
+  gap: 14px;
+}
+#sidebar::-webkit-scrollbar { width: 3px; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.sb-title {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--text3); padding: 0 4px;
+}
+.legend { display: flex; flex-direction: column; gap: 6px; padding: 0 4px; }
+.leg-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text2); }
+.leg-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.leg-dot.correct-d  { background: var(--green); }
+.leg-dot.wrong-d    { background: var(--red); }
+.leg-dot.current-d  { background: var(--blue); }
+.leg-dot.untouched-d{ background: var(--border); }
+
+#q-palette {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.p-btn {
+  aspect-ratio: 1;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-size: 12px; font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.p-btn:hover { border-color: var(--blue); color: var(--white); }
+.p-btn.cur   { border-color: var(--blue); background: rgba(37,99,235,.25); color: #93c5fd; }
+.p-btn.ok    { border-color: var(--green); background: rgba(22,163,74,.2); color: #86efac; }
+.p-btn.bad   { border-color: var(--red); background: rgba(220,38,38,.2); color: #fca5a5; }
+
+/* ─── MAIN ──────────────────────────────────────────────────── */
+#main {
+  flex: 1; min-width: 0;
+  overflow-y: auto;
+  padding: 28px 32px 40px;
+  display: flex; flex-direction: column; gap: 24px;
+}
+#main::-webkit-scrollbar { width: 5px; }
+#main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ─── QUESTION META BAR ─────────────────────────────────────── */
+.q-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.q-badge {
+  padding: 4px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; letter-spacing: .3px;
+}
+.q-badge.num { background: var(--blue); color: #fff; }
+.q-badge.cat {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  color: var(--text2); max-width: 340px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 500;
+}
+.progress-track {
+  height: 4px; background: var(--border); border-radius: 4px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), #7c3aed);
+  border-radius: 4px; transition: width .3s ease;
+}
+
+/* ─── QUESTION CARD ─────────────────────────────────────────── */
+.q-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 28px 24px;
+  transition: border-color .2s;
+}
+.q-card.answered-correct { border-color: var(--green-bd); }
+.q-card.answered-wrong   { border-color: var(--red-bd); }
+
+.q-text {
+  font-size: 17px; font-weight: 600;
+  line-height: 1.65; color: var(--white);
+  margin-bottom: 22px;
+}
+
+/* ─── OPTIONS ───────────────────────────────────────────────── */
+.options { display: flex; flex-direction: column; gap: 11px; }
+.opt {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 18px;
+  border-radius: 9px;
+  border: 2px solid var(--border);
+  background: rgba(255,255,255,.03);
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .1s;
+  user-select: none;
+  position: relative;
+}
+.opt:hover:not(.locked) {
+  border-color: #4a6fbd;
+  background: rgba(37,99,235,.08);
+  transform: translateX(2px);
+}
+.opt.locked { cursor: default; }
+
+/* Key bubble */
+.opt-key {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--bg); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800;
+  font-family: var(--mono);
+  flex-shrink: 0; transition: all .15s;
+  color: var(--text2);
+}
+.opt-text { font-size: 15px; color: var(--text); flex: 1; line-height: 1.4; }
+
+/* Result icon (right side) */
+.opt-icon {
+  font-size: 18px; flex-shrink: 0;
+  opacity: 0; transform: scale(.5);
+  transition: opacity .2s, transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.opt-icon.show { opacity: 1; transform: scale(1); }
+
+/* Correct option */
+.opt.correct {
+  border-color: var(--green-bd);
+  background: var(--green-bg);
+}
+.opt.correct .opt-key  { background: var(--green); border-color: var(--green); color: #fff; }
+.opt.correct .opt-text { color: #bbf7d0; font-weight: 600; }
+.opt.correct .opt-icon { color: #4ade80; }
+
+/* Wrong selected option */
+.opt.wrong {
+  border-color: var(--red-bd);
+  background: var(--red-bg);
+}
+.opt.wrong .opt-key  { background: var(--red); border-color: var(--red); color: #fff; }
+.opt.wrong .opt-text { color: #fecaca; font-weight: 600; }
+.opt.wrong .opt-icon { color: #f87171; }
+
+/* ─── FEEDBACK BANNER ───────────────────────────────────────── */
+.feedback-banner {
+  margin-top: 16px;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+  display: none; align-items: center; gap: 10px;
+  animation: fadeSlide .25s ease;
+}
+.feedback-banner.show { display: flex; }
+.feedback-banner.correct-fb {
+  background: rgba(22,163,74,.15);
+  border: 1px solid var(--green-bd);
+  color: #86efac;
+}
+.feedback-banner.wrong-fb {
+  background: rgba(220,38,38,.12);
+  border: 1px solid var(--red-bd);
+  color: #fca5a5;
+}
+.feedback-banner .fb-icon { font-size: 18px; }
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── NAVIGATION BUTTONS ────────────────────────────────────── */
+.nav-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.nav-info { font-size: 13px; color: var(--text2); }
+.nav-info strong { color: var(--white); }
+.nav-btns { display: flex; gap: 10px; }
+.nav-btn {
+  padding: 10px 24px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border);
+  background: rgba(255,255,255,.05);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; gap: 7px;
+}
+.nav-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,.1);
+  border-color: #5a7ac0; color: var(--white);
+}
+.nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+.nav-btn.primary {
+  background: var(--blue); border-color: var(--blue-h);
+  color: #fff;
+}
+.nav-btn.primary:hover:not(:disabled) {
+  background: var(--blue-h);
+}
+
+/* ─── FINISH SCREEN ─────────────────────────────────────────── */
+#finish-screen {
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 28px; padding: 40px 24px;
+  text-align: center;
+}
+.finish-icon { font-size: 64px; }
+.finish-title {
+  font-size: 30px; font-weight: 800; color: var(--white);
+  letter-spacing: -.5px;
+}
+.finish-sub { font-size: 16px; color: var(--text2); margin-top: 4px; }
+.result-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px; width: 100%; max-width: 680px;
+}
+.res-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 16px; text-align: center;
+}
+.res-card .rv { font-size: 36px; font-weight: 800; line-height: 1; }
+.res-card .rl { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; margin-top: 6px; }
+.res-card.c-total   .rv { color: var(--white); }
+.res-card.c-attempt .rv { color: #60a5fa; }
+.res-card.c-correct .rv { color: #4ade80; }
+.res-card.c-wrong   .rv { color: #f87171; }
+.res-card.c-pct     .rv { color: var(--amber); }
+
+.accuracy-wrap {
+  width: 100%; max-width: 500px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+}
+.accuracy-wrap h3 {
+  font-size: 12px; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+}
+.acc-track {
+  height: 22px; background: rgba(255,255,255,.07);
+  border-radius: 11px; overflow: hidden; position: relative;
+}
+.acc-fill {
+  height: 100%; border-radius: 11px;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 10px;
+  font-size: 12px; font-weight: 700; color: #fff;
+  transition: width 1s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* Answer Review Table */
+.review-wrap { width: 100%; max-width: 900px; }
+.review-wrap h3 {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  margin-bottom: 12px; text-align: left;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.review-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.review-table thead tr { background: rgba(37,99,235,.2); }
+.review-table th {
+  padding: 11px 14px; text-align: left;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px;
+  color: var(--text2);
+}
+.review-table tbody tr { border-bottom: 1px solid rgba(255,255,255,.04); }
+.review-table tbody tr:hover { background: rgba(255,255,255,.03); }
+.review-table td {
+  padding: 12px 14px; color: var(--text2);
+  vertical-align: top; line-height: 1.45;
+}
+.review-table td:first-child {
+  color: var(--text3); font-weight: 700; text-align: center;
+  width: 44px; font-family: var(--mono); font-size: 12px;
+}
+.status-pill {
+  display: inline-block; padding: 3px 10px;
+  border-radius: 12px; font-size: 11px; font-weight: 700;
+}
+.status-pill.ok  { background: rgba(22,163,74,.2); color: #86efac; border: 1px solid rgba(22,163,74,.3); }
+.status-pill.bad { background: rgba(220,38,38,.18); color: #fca5a5; border: 1px solid rgba(220,38,38,.3); }
+.ca-text { color: #86efac; font-weight: 600; font-size: 12px; }
+
+.restart-btn {
+  padding: 13px 40px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, var(--blue), #7c3aed);
+  color: #fff; font-family: var(--font);
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 4px 20px rgba(37,99,235,.35);
+}
+.restart-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(37,99,235,.5); }
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  #sidebar { width: 180px; min-width: 180px; }
+  #main { padding: 20px 20px 32px; }
+  .q-text { font-size: 15px; }
+}
+@media (max-width: 660px) {
+  #scoreboard .sb-cell { padding: 4px 8px; min-width: unset; }
+  .sb-val { font-size: 15px; }
+  .sb-lbl { font-size: 8px; }
+  #layout { flex-direction: column; }
+  #sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); padding: 12px; }
+  #q-palette { grid-template-columns: repeat(8, 1fr); }
+  #main { padding: 16px 14px 28px; }
+  .q-card { padding: 18px 16px; }
+  .opt-text { font-size: 14px; }
+  .result-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────── -->
+<div id="header">
+  <div class="header-left">
+    <div class="app-icon">&#128218;</div>
+    <div>
+      <div class="app-title">CA Practice Mode</div>
+      <div class="app-sub">April 2026 &nbsp;&#x2022;&nbsp; Instant Feedback</div>
+    </div>
+  </div>
+  <div id="scoreboard">
+    <div class="sb-cell total">
+      <div class="sb-val" id="sb-total">40</div>
+      <div class="sb-lbl">Total</div>
+    </div>
+    <div class="sb-cell attempted">
+      <div class="sb-val" id="sb-attempted">0</div>
+      <div class="sb-lbl">Attempted</div>
+    </div>
+    <div class="sb-cell correct">
+      <div class="sb-val" id="sb-correct">0</div>
+      <div class="sb-lbl">Correct</div>
+    </div>
+    <div class="sb-cell wrong">
+      <div class="sb-val" id="sb-wrong">0</div>
+      <div class="sb-lbl">Wrong</div>
+    </div>
+    <div class="sb-cell remain">
+      <div class="sb-val" id="sb-remain">40</div>
+      <div class="sb-lbl">Left</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LAYOUT ──────────────────────────────────────────────── -->
+<div id="layout">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sb-title">Question Palette</div>
+    <div class="legend">
+      <div class="leg-row"><div class="leg-dot current-d"></div> Current</div>
+      <div class="leg-row"><div class="leg-dot correct-d"></div> Correct</div>
+      <div class="leg-row"><div class="leg-dot wrong-d"></div> Wrong</div>
+      <div class="leg-row"><div class="leg-dot untouched-d"></div> Not Visited</div>
+    </div>
+    <div id="q-palette"></div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <main id="main">
+
+    <!-- Question view -->
+    <div id="quiz-view">
+      <div class="q-meta">
+        <span class="q-badge num" id="q-num-badge">Q 1 of 40</span>
+        <span class="q-badge cat" id="q-cat-badge"></span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill" style="width:2.5%"></div>
+      </div>
+      <div class="q-card" id="q-card">
+        <div class="q-text" id="q-text"></div>
+        <div class="options" id="options"></div>
+        <div class="feedback-banner" id="feedback-banner">
+          <span class="fb-icon" id="fb-icon"></span>
+          <span id="fb-msg"></span>
+        </div>
+      </div>
+      <div class="nav-row">
+        <div class="nav-info">
+          Question <strong id="nav-cur">1</strong> of <strong>40</strong>
+        </div>
+        <div class="nav-btns">
+          <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>&#8592; Prev</button>
+          <button class="nav-btn primary" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+          <button class="nav-btn primary" id="finish-btn" onclick="showFinish()" style="display:none">Finish &#10003;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Finish screen -->
+    <div id="finish-screen">
+      <div class="finish-icon" id="finish-icon"></div>
+      <div>
+        <div class="finish-title" id="finish-title"></div>
+        <div class="finish-sub" id="finish-sub"></div>
+      </div>
+      <div class="result-grid">
+        <div class="res-card c-total"><div class="rv">40</div><div class="rl">Total Qs</div></div>
+        <div class="res-card c-attempt"><div class="rv" id="r-att">0</div><div class="rl">Attempted</div></div>
+        <div class="res-card c-correct"><div class="rv" id="r-cor">0</div><div class="rl">Correct</div></div>
+        <div class="res-card c-wrong"><div class="rv" id="r-wro">0</div><div class="rl">Wrong</div></div>
+        <div class="res-card c-pct"><div class="rv" id="r-pct">0%</div><div class="rl">Accuracy</div></div>
+      </div>
+      <div class="accuracy-wrap">
+        <h3>Score Accuracy</h3>
+        <div class="acc-track">
+          <div class="acc-fill" id="acc-fill" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="review-wrap">
+        <h3>&#128196; Detailed Answer Review</h3>
+        <table class="review-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Question</th>
+              <th>Correct Answer</th>
+              <th>Your Answer</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="review-tbody"></tbody>
+        </table>
+      </div>
+      <button class="restart-btn" onclick="restart()">&#8635; Practice Again</button>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   QUESTION BANK — All 40 questions, sorted by Q.No
+═══════════════════════════════════════════════════ */
+const QS = [
+  { no:1,  cat:"Major National First Project with Odisha",
+    q:"India's first indigenous coal-to-ammonium nitrate project will be established in which district?",
+    opts:["Keonjhar","Angul","Jharsuguda","Bargarh"], ans:2 },
+  { no:2,  cat:"Sports Tournaments with Odisha",
+    q:"The 69th SGFI Rugby Championship 2025-26 was hosted by which city?",
+    opts:["Patna","Ranchi","Cuttack","Bhubaneswar"], ans:3 },
+  { no:3,  cat:"Obituaries",
+    q:"Ravi Soing, who passed away in April 2026, was distinguished in which field?",
+    opts:["Social Work","Film Production","Literature","Politics"], ans:1 },
+  { no:4,  cat:"State-specific Current Affairs",
+    q:"The Ganga Expressway, the longest in Uttar Pradesh, connects which two cities?",
+    opts:["Lucknow & Kanpur","Varanasi & Ayodhya","Meerut & Prayagraj","Noida & Agra"], ans:2 },
+  { no:5,  cat:"Sports Tournaments with Odisha",
+    q:"Which state emerged as the overall champion in the Khelo India Tribal Games 2026?",
+    opts:["Odisha","Jharkhand","Karnataka","Chhattisgarh"], ans:2 },
+  { no:6,  cat:"International Agreements & MoUs",
+    q:"The India-New Zealand FTA provides how much duty-free access to Indian exports in New Zealand?",
+    opts:["50%","75%","90%","100%"], ans:3 },
+  { no:7,  cat:"Important Days & Themes",
+    q:"World Health Day is celebrated every year on which day?",
+    opts:["April 5","April 6","April 7","April 8"], ans:2 },
+  { no:8,  cat:"Important National Appointments",
+    q:"Who was appointed as the Vice Chairperson of NITI Aayog on April 25, 2026?",
+    opts:["Arvind Panagariya","Suman K. Bery","Rajiv Kumar","Ashok Kumar Lahiri"], ans:3 },
+  { no:9,  cat:"Sports Awards & Medals",
+    q:"Who became the first athlete to officially run a marathon under two hours on April 26, 2026?",
+    opts:["Eliud Kipchoge","Kelvin Kiptum","Sebastian Sevi","Kenenisa Bekele"], ans:2 },
+  { no:10, cat:"State-specific Current Affairs",
+    q:"In which state was the Yoga Mahotsav 2026 organized by the Ministry of Ayush?",
+    opts:["Maharashtra","Uttarakhand","Delhi","Karnataka"], ans:0 },
+  { no:11, cat:"Sports Awards & Medals",
+    q:"Who was the only Indian male boxer to win a gold medal at the Asian Boxing Championship 2026?",
+    opts:["Amit Panghal","Vishwanath Suresh","Shiva Thapa","Deepak Bhoria"], ans:1 },
+  { no:12, cat:"International Summits",
+    q:"Which country withdrew its candidacy to host the COP33 climate summit in 2028?",
+    opts:["South Korea","Japan","India","Australia"], ans:2 },
+  { no:13, cat:"Environment & Ecology",
+    q:"Shekha Jheel Bird Sanctuary, declared India's 99th Ramsar site, is located in which district?",
+    opts:["Agra","Aligarh","Prayagraj","Kanpur"], ans:1 },
+  { no:14, cat:"Important National Appointments",
+    q:"Who became the first BJP Chief Minister of Bihar on April 15, 2026?",
+    opts:["Sushil Modi","Samrat Choudhary","Giriraj Singh","Ravi Shankar Prasad"], ans:1 },
+  { no:15, cat:"Important International Appointments",
+    q:"Who was appointed as the first female Chief of Army in Australia in April 2026?",
+    opts:["Susan Coyley","Emma Simpson","Sarah Miller","Jane Taylor"], ans:0 },
+  { no:16, cat:"Important Days & Themes",
+    q:"World Earth Day is celebrated on which date?",
+    opts:["April 20","April 21","April 22","April 23"], ans:2 },
+  { no:17, cat:"Important National Appointments",
+    q:"Who was appointed as the Chief Justice of the Andhra Pradesh High Court effective from April 25, 2026?",
+    opts:["Justice Dhiraj Singh Thakur","Justice Ujjal Bhuyan","Justice Lisa Gill","Justice R.D. Dhanuka"], ans:2 },
+  { no:18, cat:"Important National Appointments",
+    q:"Who was appointed as the next Chief of Defence Staff (CDS) in India?",
+    opts:["Anil Chauhan","Lt Gen NS Raja Subramani","Manoj Pande","Upendra Dwivedi"], ans:1 },
+  { no:19, cat:"Defence Military Exercises",
+    q:"Military Exercise Dustlik 2026 is a joint exercise between which countries?",
+    opts:["India & Kazakhstan","India & Uzbekistan","India & Kyrgyzstan","India & Tajikistan"], ans:1 },
+  { no:20, cat:"State-specific Current Affairs",
+    q:"Which state topped the medal tally in the India Skills 2025-26 competition?",
+    opts:["Odisha","Kerala","Uttar Pradesh","Telangana"], ans:0 },
+  { no:21, cat:"Important International Appointments",
+    q:"Who is set to become the CEO of Apple succeeding Tim Cook from September 1, 2026?",
+    opts:["Craig Federighi","Jeff Williams","John Ternus","Greg Joswiak"], ans:2 },
+  { no:22, cat:"International Summits",
+    q:"Who is the Austrian Chancellor who visited India in April 2026?",
+    opts:["Karl Nehammer","Alexander Schallenberg","Christian Stocker","Sebastian Kurz"], ans:2 },
+  { no:23, cat:"Culture & Heritage Updates",
+    q:"As of April 2026, India has 44 UNESCO World Heritage Sites. Which represents their classification?",
+    opts:["35 Cultural, 8 Natural, 1 Mixed","36 Cultural, 7 Natural, 1 Mixed","37 Cultural, 6 Natural, 1 Mixed","34 Cultural, 9 Natural, 1 Mixed"], ans:1 },
+  { no:24, cat:"International Awards",
+    q:"Who won the Laureus World Sportsman of the Year Award for 2026?",
+    opts:["Novak Djokovic","Lionel Messi","Carlos Alcaraz","Max Verstappen"], ans:2 },
+  { no:25, cat:"International Agreements & MoUs",
+    q:"Which country received 13 tons of BCG vaccines from India in April 2026?",
+    opts:["Afghanistan","Sri Lanka","Nepal","Bangladesh"], ans:0 },
+  { no:26, cat:"Defence Equipment & Induction",
+    q:"India's third nuclear-powered ballistic missile submarine is named:",
+    opts:["INS Arihant","INS Arighat","INS Aridhaman","INS Chakra"], ans:2 },
+  { no:27, cat:"Obituaries",
+    q:"Chandrikapersad Santokhi, who recently passed away, was the former President of which country?",
+    opts:["Suriname","Mauritius","Fiji","UAE"], ans:0 },
+  { no:28, cat:"Science & Technology",
+    q:"India's first approved dengue vaccine is:",
+    opts:["Covaxin","Qdenga","Covishield","Dengvaxia"], ans:1 },
+  { no:29, cat:"Space Missions",
+    q:"Which of the following is NASA's first crewed moon mission after 54 years since Apollo 17?",
+    opts:["Artemis I","Artemis II","Artemis III","Orion"], ans:1 },
+  { no:30, cat:"Important Government Reports & Indices",
+    q:"The first phase of India Census 2027 began on which date?",
+    opts:["April 1","April 5","April 10","April 15"], ans:0 },
+  { no:31, cat:"State-specific Current Affairs",
+    q:"In April 2026, which state police force was awarded the President's Police Colour?",
+    opts:["Delhi Police","Odisha Police","Uttar Pradesh Police","Maharashtra Police"], ans:1 },
+  { no:32, cat:"Important National Appointments",
+    q:"Who was appointed as the brand ambassador for the Census 2027?",
+    opts:["Virat Kohli","Sudarshan Patnaik","PV Sindhu","AR Rahman"], ans:1 },
+  { no:33, cat:"Important International Appointments",
+    q:"Who led the TISZA party to victory in the Hungarian parliamentary election held in April 2026?",
+    opts:["Peter Magyar","Viktor Orban","Katalin Novak","Gergely Karacsony"], ans:0 },
+  { no:34, cat:"Odisha Special – GI Tag",
+    q:"Chhenapoda Divas is celebrated on which date in Odisha?",
+    opts:["April 1","April 5","April 11","April 15"], ans:2 },
+  { no:35, cat:"Defence Equipment & Induction",
+    q:"The NSM-SR missile test was carried out off the coast of which state?",
+    opts:["Gujarat","Tamil Nadu","Odisha","Kerala"], ans:2 },
+  { no:36, cat:"Important International Appointments",
+    q:"Luvsannamrai Oyun-Erdene is the Prime Minister of which country?",
+    opts:["Thailand","Mongolia","Cambodia","Nepal"], ans:1 },
+  { no:37, cat:"Major National First Project with Odisha",
+    q:"India's first 3D glass semiconductor packaging unit was launched in which city?",
+    opts:["Bhopal","Bhubaneswar","Kolkata","Pune"], ans:1 },
+  { no:38, cat:"State-specific Current Affairs",
+    q:"Who was unanimously elected as the President of the Odisha Steel Producers Association?",
+    opts:["Naveen Patnaik","VK Pandian","Asit Tripathy","Pradeep Jena"], ans:2 },
+  { no:39, cat:"Books & Authors",
+    q:"Who is the author of the book 'Tides of Time', recently released by Vice President CP Radhakrishnan?",
+    opts:["Shashi Tharoor","Sudha Murty","Jairam Ramesh","Vikram Seth"], ans:1 },
+  { no:40, cat:"Important International Appointments",
+    q:"Min Aung Hlaing is the President of which country?",
+    opts:["Myanmar","Thailand","Cambodia","Nepal"], ans:0 },
+];
+
+const KEYS = ['A','B','C','D'];
+
+/* ─── STATE ─────────────────────────────────────────────────── */
+let cur      = 0;
+let answers  = new Array(40).fill(null); // null = unanswered, {sel, correct} after answer
+
+/* ─── INIT ──────────────────────────────────────────────────── */
+buildPalette();
+render(0);
+
+/* ─── BUILD PALETTE ─────────────────────────────────────────── */
+function buildPalette() {
+  const pal = document.getElementById('q-palette');
+  pal.innerHTML = '';
+  QS.forEach((_, i) => {
+    const b = document.createElement('button');
+    b.className = 'p-btn';
+    b.id = 'pb-' + i;
+    b.textContent = i + 1;
+    b.onclick = () => { cur = i; render(i); };
+    pal.appendChild(b);
+  });
+}
+
+/* ─── RENDER QUESTION ───────────────────────────────────────── */
+function render(idx) {
+  cur = idx;
+  const q   = QS[idx];
+  const ans = answers[idx];
+  const locked = ans !== null;
+
+  // Meta
+  document.getElementById('q-num-badge').textContent = `Q ${idx + 1} of 40`;
+  document.getElementById('q-cat-badge').textContent = q.cat;
+  document.getElementById('q-text').textContent       = q.q;
+  document.getElementById('nav-cur').textContent      = idx + 1;
+  document.getElementById('prog-fill').style.width    = `${((idx + 1) / 40) * 100}%`;
+
+  // Card border state
+  const card = document.getElementById('q-card');
+  card.className = 'q-card' + (ans ? (ans.correct ? ' answered-correct' : ' answered-wrong') : '');
+
+  // Options
+  const optDiv = document.getElementById('options');
+  optDiv.innerHTML = '';
+  q.opts.forEach((text, i) => {
+    const div = document.createElement('div');
+    div.className = 'opt' + (locked ? ' locked' : '');
+
+    let extraClass = '';
+    if (locked) {
+      if (i === q.ans) extraClass = ' correct';
+      else if (i === ans.sel && !ans.correct) extraClass = ' wrong';
+    }
+    div.className += extraClass;
+
+    const icon = (locked && i === q.ans) ? '&#10004;'
+               : (locked && i === ans.sel && !ans.correct) ? '&#10008;'
+               : '';
+
+    div.innerHTML = `
+      <span class="opt-key">${KEYS[i]}</span>
+      <span class="opt-text">${text}</span>
+      <span class="opt-icon${icon ? ' show' : ''}">${icon}</span>`;
+
+    if (!locked) {
+      div.addEventListener('click', () => handleSelect(idx, i));
+    }
+    optDiv.appendChild(div);
+  });
+
+  // Feedback banner
+  const banner = document.getElementById('feedback-banner');
+  const fbIcon = document.getElementById('fb-icon');
+  const fbMsg  = document.getElementById('fb-msg');
+  if (locked) {
+    banner.className = 'feedback-banner show ' + (ans.correct ? 'correct-fb' : 'wrong-fb');
+    fbIcon.textContent = ans.correct ? '✅' : '❌';
+    fbMsg.textContent  = ans.correct
+      ? 'Correct! Well done.'
+      : `Wrong! Correct answer: ${KEYS[q.ans]}. ${q.opts[q.ans]}`;
+  } else {
+    banner.className = 'feedback-banner';
+  }
+
+  // Nav buttons
+  document.getElementById('prev-btn').disabled   = idx === 0;
+  const isLast = idx === 39;
+  document.getElementById('next-btn').style.display   = isLast ? 'none' : '';
+  document.getElementById('finish-btn').style.display = isLast ? '' : 'none';
+
+  updatePalette();
+  updateScoreboard();
+}
+
+/* ─── SELECT HANDLER ─────────────────────────────────────────── */
+function handleSelect(qIdx, selIdx) {
+  if (answers[qIdx] !== null) return; // locked
+  const correct = selIdx === QS[qIdx].ans;
+  answers[qIdx] = { sel: selIdx, correct };
+  render(qIdx);
+
+  // Animate scoreboard pop
+  const id = correct ? 'sb-correct' : 'sb-wrong';
+  const el = document.getElementById(id);
+  el.style.transform = 'scale(1.35)';
+  setTimeout(() => el.style.transform = '', 200);
+}
+
+/* ─── NAVIGATE ───────────────────────────────────────────────── */
+function navigate(dir) {
+  const next = cur + dir;
+  if (next < 0 || next >= 40) return;
+  cur = next; render(cur);
+}
+
+/* ─── UPDATE PALETTE ─────────────────────────────────────────── */
+function updatePalette() {
+  QS.forEach((_, i) => {
+    const b = document.getElementById('pb-' + i);
+    b.className = 'p-btn';
+    if (i === cur) b.classList.add('cur');
+    else if (answers[i] === null) { /* default */ }
+    else if (answers[i].correct) b.classList.add('ok');
+    else b.classList.add('bad');
+  });
+}
+
+/* ─── UPDATE SCOREBOARD ──────────────────────────────────────── */
+function updateScoreboard() {
+  const att = answers.filter(a => a !== null).length;
+  const cor = answers.filter(a => a && a.correct).length;
+  const wro = att - cor;
+  document.getElementById('sb-attempted').textContent = att;
+  document.getElementById('sb-correct').textContent   = cor;
+  document.getElementById('sb-wrong').textContent     = wro;
+  document.getElementById('sb-remain').textContent    = 40 - att;
+}
+
+/* ─── FINISH SCREEN ──────────────────────────────────────────── */
+function showFinish() {
+  const att = answers.filter(a => a !== null).length;
+  const cor = answers.filter(a => a && a.correct).length;
+  const wro = att - cor;
+  const pct = att > 0 ? Math.round((cor / att) * 100) : 0;
+
+  document.getElementById('r-att').textContent = att;
+  document.getElementById('r-cor').textContent = cor;
+  document.getElementById('r-wro').textContent = wro;
+  document.getElementById('r-pct').textContent = pct + '%';
+
+  // Emoji + title
+  const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '🌟' : pct >= 40 ? '📚' : '💪';
+  const title = pct >= 80 ? 'Excellent Work!' : pct >= 60 ? 'Good Job!' : pct >= 40 ? 'Keep Practicing!' : 'Keep Going!';
+  document.getElementById('finish-icon').textContent  = emoji;
+  document.getElementById('finish-title').textContent = title;
+  document.getElementById('finish-sub').textContent   =
+    `You scored ${cor} out of ${att} attempted (${pct}% accuracy)`;
+
+  // Accuracy bar
+  const bar = document.getElementById('acc-fill');
+  bar.style.width = '0%';
+  const color = pct >= 70 ? 'linear-gradient(90deg,#16a34a,#22c55e)'
+              : pct >= 40 ? 'linear-gradient(90deg,#d97706,#f59e0b)'
+              : 'linear-gradient(90deg,#dc2626,#f87171)';
+  bar.style.background = color;
+  bar.textContent = pct + '%';
+  setTimeout(() => { bar.style.width = pct + '%'; }, 80);
+
+  // Review table
+  const tbody = document.getElementById('review-tbody');
+  tbody.innerHTML = '';
+  QS.forEach((q, i) => {
+    const a = answers[i];
+    const tr = document.createElement('tr');
+    let yourAns = '—', status = '';
+    if (a) {
+      yourAns = `${KEYS[a.sel]}. ${q.opts[a.sel]}`;
+      status  = a.correct
+        ? '<span class="status-pill ok">&#10004; Correct</span>'
+        : '<span class="status-pill bad">&#10008; Wrong</span>';
+    } else {
+      status = '<span class="status-pill" style="background:rgba(255,255,255,.05);color:#4a5f80;border:1px solid #263350">Skipped</span>';
+    }
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${q.q}</td>
+      <td><span class="ca-text">${KEYS[q.ans]}. ${q.opts[q.ans]}</span></td>
+      <td style="color:${a && !a.correct ? '#fca5a5' : 'inherit'}">${yourAns}</td>
+      <td>${status}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('quiz-view').style.display    = 'none';
+  document.getElementById('finish-screen').style.display = 'flex';
+}
+
+/* ─── RESTART ────────────────────────────────────────────────── */
+function restart() {
+  answers = new Array(40).fill(null);
+  cur = 0;
+  document.getElementById('finish-screen').style.display = 'none';
+  document.getElementById('quiz-view').style.display     = 'block';
+  buildPalette();
+  render(0);
+}
+</script>
+</body>
+</html>
